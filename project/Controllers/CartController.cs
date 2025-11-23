@@ -2,8 +2,8 @@
 using project.Data;
 using project.ViewModels;
 using project.Helpers;
-using System.Net.WebSockets;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 namespace project.Controllers
 {
     public class CartController : Controller
@@ -71,8 +71,15 @@ namespace project.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Gửi danh sách sản phẩm sang view Checkout
-            return View(cart);
+            // Nếu chưa đăng nhập, yêu cầu đăng nhập
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                TempData["Message"] = "Vui lòng đăng nhập để tiếp tục thanh toán";
+                return RedirectToAction("DangNhap", "KhachHang", new { ReturnUrl = "/Cart/ThanhToan" });
+            }
+
+            // Redirect đến trang thanh toán
+            return RedirectToAction("ThanhToan");
         }
 
         [Authorize]
@@ -86,15 +93,34 @@ namespace project.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Gửi danh sách sản phẩm sang view ThanhToan
-            return View(cart);
+            // Lấy thông tin khách hàng đã đăng nhập để tự động điền form
+            CheckoutVM model = new CheckoutVM();
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                if (!string.IsNullOrEmpty(email))
+                {
+                    var kh = db.KhachHangs.SingleOrDefault(k => k.Email == email);
+                    if (kh != null)
+                    {
+                        model.HoTen = kh.HoTen ?? string.Empty;
+                        model.DienThoai = kh.DienThoai ?? string.Empty;
+                        model.DiaChi = kh.DiaChi ?? string.Empty;
+                        model.Email = kh.Email;
+                    }
+                }
+            }
+
+            ViewBag.Cart = cart;
+            ViewBag.Total = cart.Sum(p => p.ThanhTien);
+            return View(model);
         }
 
 
         [Authorize]
         [HttpPost]
-        public IActionResult ThanhToan(string HoTen, string DienThoai, string DiaChi,
-                                      string Email, string CachThanhToan)
+        [ValidateAntiForgeryToken]
+        public IActionResult ThanhToan(CheckoutVM model)
         {
             var cart = Cart;
             if (cart == null || !cart.Any())
@@ -103,56 +129,97 @@ namespace project.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Lấy MaKH từ tài khoản đăng nhập (Email)
-            string? maKh = null;
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Cart = cart;
+                ViewBag.Total = cart.Sum(p => p.ThanhTien);
+                return View(model);
+            }
+
+            // Lấy MaKH từ tài khoản đăng nhập
+            string maKh = string.Empty;
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                // Ở đây giả sử User.Identity.Name = Email khách hàng
-                var kh = db.KhachHangs.SingleOrDefault(k => k.Email == User.Identity.Name);
-                if (kh != null)
+                // Lấy CustomerID từ claim
+                var customerId = User.FindFirst("CustomerID")?.Value;
+                if (!string.IsNullOrEmpty(customerId))
                 {
-                    maKh = kh.MaKh;   // chú ý: thuộc tính trong model phải là MaKh (mapping MaKH trong DB)
+                    maKh = customerId;
+                }
+                else
+                {
+                    // Fallback: tìm theo Email
+                    var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                    if (!string.IsNullOrEmpty(email))
+                    {
+                        var kh = db.KhachHangs.SingleOrDefault(k => k.Email == email);
+                        if (kh != null)
+                        {
+                            maKh = kh.MaKh;
+                        }
+                    }
                 }
             }
 
-            // Tạo hóa đơn (mapping với bảng HoaDon trong DB)
-            var hoaDon = new HoaDon
+            // Nếu không tìm thấy MaKh, yêu cầu đăng nhập lại
+            if (string.IsNullOrEmpty(maKh))
             {
-                MaKh = maKh,              // nullable
-                NgayDat = DateTime.Now,
-                NgayCan = DateTime.Now,      // tuỳ bạn dùng
-                NgayGiao = DateTime.Now.AddDays(3),
-                HoTen = HoTen,
-                DiaChi = DiaChi,
-                CachThanhToan = CachThanhToan,
-                CachVanChuyen = "Ship COD",
-                PhiVanChuyen = 0,
-                MaTrangThai = 1,
-                GhiChu = $"ĐT: {DienThoai}, Email: {Email}"
-            };
-
-            db.HoaDons.Add(hoaDon);
-            db.SaveChanges();   // sinh MaHd
-
-            foreach (var item in cart)
-            {
-                var ct = new ChiTietHd
-                {
-                    MaHd = hoaDon.MaHd,
-                    MaHh = item.MaHh,
-                    SoLuong = item.SoLuong,
-                    DonGia = item.DonGia,
-                    GiamGia = 0
-                };
-                db.ChiTietHds.Add(ct);
+                TempData["Message"] = "Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại.";
+                return RedirectToAction("DangNhap", "KhachHang", new { ReturnUrl = "/Cart/ThanhToan" });
             }
 
-            db.SaveChanges();
+            try
+            {
+                // Tạo hóa đơn
+                var hoaDon = new HoaDon
+                {
+                    MaKh = maKh,
+                    NgayDat = DateTime.Now,
+                    NgayCan = DateTime.Now,
+                    NgayGiao = DateTime.Now.AddDays(3),
+                    HoTen = model.HoTen,
+                    DiaChi = model.DiaChi,
+                    DienThoai = model.DienThoai,
+                    CachThanhToan = model.CachThanhToan,
+                    CachVanChuyen = "Ship COD",
+                    PhiVanChuyen = 0,
+                    MaTrangThai = 1,
+                    GhiChu = !string.IsNullOrEmpty(model.Email) ? $"Email: {model.Email}" : null
+                };
 
-            HttpContext.Session.Remove(CART_KEY);
+                db.HoaDons.Add(hoaDon);
+                db.SaveChanges();   // sinh MaHd
 
-            TempData["Message"] = $"Đặt hàng thành công. Mã hóa đơn: {hoaDon.MaHd}";
-            return RedirectToAction("Index", "Home");
+                // Thêm chi tiết hóa đơn
+                foreach (var item in cart)
+                {
+                    var ct = new ChiTietHd
+                    {
+                        MaHd = hoaDon.MaHd,
+                        MaHh = item.MaHh,
+                        SoLuong = item.SoLuong,
+                        DonGia = item.DonGia,
+                        GiamGia = 0
+                    };
+                    db.ChiTietHds.Add(ct);
+                }
+
+                db.SaveChanges();
+
+                // Xóa giỏ hàng sau khi thanh toán thành công
+                HttpContext.Session.Remove(CART_KEY);
+
+                TempData["Message"] = $"Đặt hàng thành công! Mã hóa đơn: {hoaDon.MaHd}";
+                TempData["Success"] = true;
+                return RedirectToAction("Index", "Home");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"Có lỗi xảy ra khi xử lý đơn hàng: {ex.Message}");
+                ViewBag.Cart = cart;
+                ViewBag.Total = cart.Sum(p => p.ThanhTien);
+                return View(model);
+            }
         }
 
 
