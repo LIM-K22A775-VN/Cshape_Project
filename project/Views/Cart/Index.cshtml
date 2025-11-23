@@ -199,6 +199,7 @@
                         }
                         
                         // Cập nhật số lượng trên icon giỏ hàng
+                        console.log('Tổng số lượng sản phẩm:', data.totalQuantity);
                         updateCartIcon(data.totalQuantity);
                     } else {
                         alert('Không thể cập nhật số lượng');
@@ -212,31 +213,44 @@
 
             // Hàm cập nhật icon giỏ hàng
             function updateCartIcon(quantity) {
-                // Tìm cart icon - cart icon nằm trong view component
-                // Selector: tìm span trong a có chứa fa-shopping-bag
-                const shoppingBagIcon = document.querySelector('.fa-shopping-bag');
-                if (shoppingBagIcon) {
-                    const cartLink = shoppingBagIcon.closest('a');
-                    if (cartLink) {
-                        const cartBadge = cartLink.querySelector('span.position-absolute');
-                        if (cartBadge) {
-                            cartBadge.textContent = quantity;
-                            // Nếu số lượng = 0, ẩn badge
-                            if (quantity === 0) {
-                                cartBadge.style.display = 'none';
-                            } else {
-                                cartBadge.style.display = 'flex';
-                            }
-                            return;
-                        }
+                // Tìm cart badge - thử nhiều selector
+                let cartBadge = null;
+                
+                // Cách 1: Tìm qua icon shopping-bag
+                const shoppingBag = document.querySelector('.fa-shopping-bag');
+                if (shoppingBag) {
+                    const parentLink = shoppingBag.closest('a');
+                    if (parentLink) {
+                        cartBadge = parentLink.querySelector('span.position-absolute');
                     }
                 }
                 
-                // Nếu không tìm thấy, reload lại trang để cập nhật view component
-                // (ViewComponent được render server-side nên cần reload)
-                setTimeout(() => {
+                // Cách 2: Tìm tất cả link có chứa /Cart và tìm span trong đó
+                if (!cartBadge) {
+                    document.querySelectorAll('a').forEach(link => {
+                        const href = link.getAttribute('href') || link.href || '';
+                        if (href.includes('/Cart') || link.querySelector('.fa-shopping-bag')) {
+                            const badge = link.querySelector('span.position-absolute');
+                            if (badge) {
+                                cartBadge = badge;
+                            }
+                        }
+                    });
+                }
+                
+                // Cập nhật số lượng
+                if (cartBadge) {
+                    cartBadge.textContent = quantity;
+                    if (quantity === 0) {
+                        cartBadge.style.display = 'none';
+                    } else {
+                        cartBadge.style.display = 'flex';
+                    }
+                } else {
+                    // Nếu không tìm thấy trong DOM hiện tại, reload để cập nhật view component
+                    // ViewComponent được render server-side nên cần reload
                     location.reload();
-                }, 300);
+                }
             }
         });
     </script>
