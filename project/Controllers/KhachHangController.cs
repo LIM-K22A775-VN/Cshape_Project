@@ -57,6 +57,22 @@ namespace project.Controllers
                     // Map sang KhachHang
                     var khachHang = _mapper.Map<KhachHang>(model);
 
+                    // Xử lý NgaySinh - nếu null thì dùng ngày hiện tại
+                    if (!model.NgaySinh.HasValue)
+                    {
+                        khachHang.NgaySinh = DateTime.Now;
+                    }
+                    else
+                    {
+                        khachHang.NgaySinh = model.NgaySinh.Value;
+                    }
+
+                    // Xử lý Email - nếu null thì dùng email mặc định
+                    if (string.IsNullOrEmpty(model.Email))
+                    {
+                        khachHang.Email = $"{model.MaKh}@example.com";
+                    }
+
                     khachHang.RandomKey = MyUtil.GenerateRandomKey();
                     khachHang.MatKhau = model.MatKhau.ToMd5Hash(khachHang.RandomKey);
                     khachHang.HieuLuc = true;
@@ -107,7 +123,9 @@ namespace project.Controllers
                     }
                     else
                     {
-                        if(khachHang.MatKhau != model.Password)
+                        // Hash password với RandomKey để so sánh
+                        var hashedPassword = model.Password.ToMd5Hash(khachHang.RandomKey);
+                        if(khachHang.MatKhau != hashedPassword)
                         {
                             ModelState.AddModelError("loi", "sai mat khau");
                         }

@@ -32,7 +32,9 @@ public class RegisterVM
     [RegularExpression(@"0[9875]\d{8}", ErrorMessage = "Chua dung dinh dang di dong viet nam")]
     public string DienThoai { get; set; }
 
-    [EmailAddress(ErrorMessage = "Chua dung dinh dang")]
+    [Display(Name = "Email")]
+    [EmailAddress(ErrorMessage = "Chưa đúng định dạng email")]
+    [Required(ErrorMessage = "*")]
     public string Email { get; set; }
 
     // BỎ thuộc tính này nếu không dùng
