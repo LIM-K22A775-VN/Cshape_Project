@@ -48,22 +48,22 @@
                                 <p class="mb-0 mt-4">@item.DonGia $</p>
                             </td>
                             <td>
-                                <div class="input-group quantity mt-4" style="width: 100px;">
+                                <div class="input-group quantity mt-4" style="width: 100px;" data-mahh="@item.MaHh">
                                     <div class="input-group-btn">
-                                        <button class="btn btn-sm btn-minus rounded-circle bg-light border">
+                                        <button class="btn btn-sm btn-minus rounded-circle bg-light border" type="button">
                                             <i class="fa fa-minus"></i>
                                         </button>
                                     </div>
-                                    <input type="text" class="form-control form-control-sm text-center border-0" value="@item.SoLuong">
+                                    <input type="text" class="form-control form-control-sm text-center border-0 quantity-input" value="@item.SoLuong" readonly>
                                     <div class="input-group-btn">
-                                        <button class="btn btn-sm btn-plus rounded-circle bg-light border">
+                                        <button class="btn btn-sm btn-plus rounded-circle bg-light border" type="button">
                                             <i class="fa fa-plus"></i>
                                         </button>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <p class="mb-0 mt-4">@item.ThanhTien $</p>
+                                <p class="mb-0 mt-4 item-total">@item.ThanhTien.ToString("F2") $</p>
                             </td>
                             <td>
                                 <a asp-action="RemoveCart" asp-controller="Cart" 
@@ -91,7 +91,7 @@
                         <h1 class="display-6 mb-4">Cart <span class="fw-normal">Total</span></h1>
                         <div class="d-flex justify-content-between mb-4">
                             <h5 class="mb-0 me-4">Subtotal:</h5>
-                            <p class="mb-0">$@Model.Sum(p=>p.ThanhTien)</p>
+                            <p class="mb-0" id="cartSubtotal">$@Model.Sum(p=>p.ThanhTien).ToString("F2")</p>
                         </div>
                         <div class="d-flex justify-content-between">
                             <h5 class="mb-0 me-4">Shipping</h5>
@@ -103,7 +103,7 @@
                     </div>
                     <div class="py-4 mb-4 border-top border-bottom d-flex justify-content-between">
                         <h5 class="mb-0 ps-4 me-4">Total</h5>
-                        <p class="mb-0 pe-4">$99.00</p>
+                        <p class="mb-0 pe-4" id="cartTotal">$@((Model.Sum(p => p.ThanhTien) + 3).ToString("F2"))</p>
                     </div>
                     <a asp-action="ThanhToan" asp-controller="Cart"
                        class="btn border-secondary rounded-pill px-4 py-3 text-primary text-uppercase mb-4 ms-4">
@@ -122,34 +122,92 @@
             // Khi bấm nút +
             document.querySelectorAll(".btn-plus").forEach(btn => {
                 btn.addEventListener("click", function () {
-                    const input = this.closest(".quantity").querySelector("input");
+                    const quantityDiv = this.closest(".quantity");
+                    const input = quantityDiv.querySelector("input");
+                    const maHh = quantityDiv.getAttribute("data-mahh");
                     let value = parseInt(input.value) || 0;
-                    input.value = value + 1;
-
-                    updateTotalRow(this);
+                    value = value + 1;
+                    
+                    updateQuantity(maHh, value);
                 });
             });
 
             // Khi bấm nút -
             document.querySelectorAll(".btn-minus").forEach(btn => {
                 btn.addEventListener("click", function () {
-                    const input = this.closest(".quantity").querySelector("input");
+                    const quantityDiv = this.closest(".quantity");
+                    const input = quantityDiv.querySelector("input");
+                    const maHh = quantityDiv.getAttribute("data-mahh");
                     let value = parseInt(input.value) || 0;
                     if (value > 1) {
-                        input.value = value - 1;
-                        updateTotalRow(this);
+                        value = value - 1;
+                        updateQuantity(maHh, value);
                     }
                 });
             });
 
-            // Hàm cập nhật tổng tiền của từng hàng
-            function updateTotalRow(button) {
-                const row = button.closest("tr");
-                const priceText = row.querySelector("td:nth-child(3) p").innerText.replace("$", "").trim();
-                const price = parseFloat(priceText);
-                const quantity = parseInt(row.querySelector(".quantity input").value);
-                const totalCell = row.querySelector("td:nth-child(5) p");
-                totalCell.innerText = (price * quantity).toFixed(2) + " $";
+            // Hàm cập nhật số lượng và tổng tiền
+            function updateQuantity(maHh, quantity) {
+                fetch('/Cart/UpdateQuantity', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `id=${maHh}&quantity=${quantity}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Cập nhật UI
+                        const row = document.querySelector(`[data-mahh="${maHh}"]`).closest("tr");
+                        const priceText = row.querySelector("td:nth-child(3) p").innerText.replace("$", "").trim();
+                        const price = parseFloat(priceText);
+                        const input = row.querySelector(".quantity-input");
+                        input.value = quantity;
+                        
+                        // Cập nhật thành tiền của hàng
+                        const totalCell = row.querySelector(".item-total");
+                        if (totalCell) {
+                            totalCell.innerText = (price * quantity).toFixed(2) + " $";
+                        }
+                        
+                        // Cập nhật Subtotal
+                        const subtotal = data.subtotal;
+                        document.getElementById("cartSubtotal").innerText = "$" + subtotal.toFixed(2);
+                        
+                        // Cập nhật Total (Subtotal + Shipping $3.00)
+                        const total = subtotal + 3.00;
+                        document.getElementById("cartTotal").innerText = "$" + total.toFixed(2);
+                        
+                        // Cập nhật số lượng trên icon giỏ hàng
+                        updateCartIcon(data.totalQuantity);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi cập nhật số lượng');
+                });
+            }
+
+            // Hàm cập nhật icon giỏ hàng
+            function updateCartIcon(quantity) {
+                // Tìm và cập nhật số lượng trong cart icon
+                const cartIcon = document.querySelector('a[href*="/Cart"] span');
+                if (cartIcon) {
+                    cartIcon.textContent = quantity;
+                    // Nếu số lượng = 0, ẩn badge
+                    if (quantity === 0) {
+                        cartIcon.style.display = 'none';
+                    } else {
+                        cartIcon.style.display = 'flex';
+                    }
+                } else {
+                    // Nếu không tìm thấy trong trang hiện tại, có thể đang ở trang khác
+                    // Reload lại để cập nhật
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
+                }
             }
         });
     </script>

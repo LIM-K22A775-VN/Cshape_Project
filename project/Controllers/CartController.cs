@@ -62,6 +62,28 @@ namespace project.Controllers
             return RedirectToAction("Index");
         }
 
+        [HttpPost]
+        public IActionResult UpdateQuantity(int id, int quantity)
+        {
+            var giohang = Cart;
+            var item = giohang.SingleOrDefault(p => p.MaHh == id);
+            if (item != null && quantity > 0)
+            {
+                item.SoLuong = quantity;
+                HttpContext.Session.Set(CART_KEY, giohang);
+                
+                var subtotal = giohang.Sum(p => p.ThanhTien);
+                var totalQuantity = giohang.Sum(p => p.SoLuong);
+                
+                return Json(new { 
+                    success = true, 
+                    subtotal = subtotal,
+                    totalQuantity = totalQuantity
+                });
+            }
+            return Json(new { success = false });
+        }
+
         public IActionResult Checkout()
         {
             var cart = Cart;
