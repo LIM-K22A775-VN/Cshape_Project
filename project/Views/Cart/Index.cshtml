@@ -4,11 +4,11 @@
 }
 <!-- Single Page Header start -->
 <div class="container-fluid page-header py-5">
-    <h1 class="text-center text-white display-6">Cart</h1>
+    <h1 class="text-center text-white display-6">Giỏ hàng</h1>
     <ol class="breadcrumb justify-content-center mb-0">
-        <li class="breadcrumb-item"><a href="#">Home</a></li>
-        <li class="breadcrumb-item"><a href="#">Pages</a></li>
-        <li class="breadcrumb-item active text-white">Cart</li>
+        <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+        <li class="breadcrumb-item"><a href="#">Trang</a></li>
+        <li class="breadcrumb-item active text-white">Giỏ hàng</li>
     </ol>
 </div>
 <!-- Single Page Header End -->
@@ -19,12 +19,12 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th scope="col">Products</th>
-                        <th scope="col">Name</th>
-                        <th scope="col">Price</th>
-                        <th scope="col">Quantity</th>
-                        <th scope="col">Total</th>
-                        <th scope="col">Handle</th>
+                        <th scope="col">Sản phẩm</th>
+                        <th scope="col">Tên</th>
+                        <th scope="col">Giá</th>
+                        <th scope="col">Số lượng</th>
+                        <th scope="col">Thành tiền</th>
+                        <th scope="col">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -45,7 +45,7 @@
                                     </p>
                             </td>
                             <td>
-                                <p class="mb-0 mt-4 item-price" data-price="@item.DonGia">@item.DonGia $</p>
+                                <p class="mb-0 mt-4 item-price" data-price="@item.DonGia">@item.DonGia.ToString("N0") đ</p>
                             </td>
                             <td>
                                 <div class="input-group quantity mt-4" style="width: 100px;" data-mahh="@item.MaHh">
@@ -63,7 +63,7 @@
                                 </div>
                             </td>
                             <td>
-                                <p class="mb-0 mt-4 item-total">@item.ThanhTien.ToString("F2") $</p>
+                                <p class="mb-0 mt-4 item-total">@item.ThanhTien.ToString("N0") đ</p>
                             </td>
                             <td>
                                 <a asp-action="RemoveCart" asp-controller="Cart" 
@@ -80,30 +80,30 @@
             </table>
         </div>
         <div class="mt-5">
-            <input type="text" class="border-0 border-bottom rounded me-5 py-3 mb-4" placeholder="Coupon Code">
-            <button class="btn border-secondary rounded-pill px-4 py-3 text-primary" type="button">Apply Coupon</button>
+            <input type="text" class="border-0 border-bottom rounded me-5 py-3 mb-4" placeholder="Mã giảm giá">
+            <button class="btn border-secondary rounded-pill px-4 py-3 text-primary" type="button">Áp dụng mã</button>
         </div>
         <div class="row g-4 justify-content-end">
             <div class="col-8"></div>
             <div class="col-sm-8 col-md-7 col-lg-6 col-xl-4">
                 <div class="bg-light rounded">
                     <div class="p-4">
-                        <h1 class="display-6 mb-4">Cart <span class="fw-normal">Total</span></h1>
+                        <h1 class="display-6 mb-4">Tổng <span class="fw-normal">giỏ hàng</span></h1>
                         <div class="d-flex justify-content-between mb-4">
-                            <h5 class="mb-0 me-4">Subtotal:</h5>
-                            <p class="mb-0" id="cartSubtotal">$@Model.Sum(p=>p.ThanhTien).ToString("F2")</p>
+                            <h5 class="mb-0 me-4">Tạm tính:</h5>
+                            <p class="mb-0" id="cartSubtotal">@Model.Sum(p=>p.ThanhTien).ToString("N0") đ</p>
                         </div>
                         <div class="d-flex justify-content-between">
-                            <h5 class="mb-0 me-4">Shipping</h5>
+                            <h5 class="mb-0 me-4">Phí vận chuyển</h5>
                             <div class="">
-                                <p class="mb-0">Flat rate: $3.00</p>
+                                <p class="mb-0">Phí cố định: 30.000 đ</p>
                             </div>
                         </div>
-                        <p class="mb-0 text-end">Shipping to Ukraine.</p>
+                        <p class="mb-0 text-end">Vận chuyển đến Việt Nam.</p>
                     </div>
                     <div class="py-4 mb-4 border-top border-bottom d-flex justify-content-between">
-                        <h5 class="mb-0 ps-4 me-4">Total</h5>
-                        <p class="mb-0 pe-4" id="cartTotal">$@((Model.Sum(p => p.ThanhTien) + 3).ToString("F2"))</p>
+                        <h5 class="mb-0 ps-4 me-4">Tổng cộng</h5>
+                        <p class="mb-0 pe-4" id="cartTotal">@((Model.Sum(p => p.ThanhTien) + 30000).ToString("N0")) đ</p>
                     </div>
                     <a asp-action="ThanhToan" asp-controller="Cart"
                        class="btn border-secondary rounded-pill px-4 py-3 text-primary text-uppercase mb-4 ms-4">
@@ -180,22 +180,22 @@
                         // Cập nhật thành tiền của hàng
                         const totalCell = row.querySelector(".item-total");
                         if (totalCell) {
-                            const itemTotal = (price * quantity).toFixed(2);
-                            totalCell.innerText = itemTotal + " $";
+                            const itemTotal = price * quantity;
+                            totalCell.innerText = itemTotal.toLocaleString('vi-VN') + " đ";
                         }
                         
-                        // Cập nhật Subtotal
+                        // Cập nhật Tạm tính
                         const subtotal = parseFloat(data.subtotal) || 0;
                         const subtotalElement = document.getElementById("cartSubtotal");
                         if (subtotalElement) {
-                            subtotalElement.innerText = "$" + subtotal.toFixed(2);
+                            subtotalElement.innerText = subtotal.toLocaleString('vi-VN') + " đ";
                         }
                         
-                        // Cập nhật Total (Subtotal + Shipping $3.00)
-                        const total = subtotal + 3.00;
+                        // Cập nhật Tổng cộng (Tạm tính + Phí vận chuyển 30.000 đ)
+                        const total = subtotal + 30000;
                         const totalElement = document.getElementById("cartTotal");
                         if (totalElement) {
-                            totalElement.innerText = "$" + total.toFixed(2);
+                            totalElement.innerText = total.toLocaleString('vi-VN') + " đ";
                         }
                         
                         // Cập nhật số lượng trên icon giỏ hàng
