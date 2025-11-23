@@ -7988,19 +7988,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\mis\\.nuget\\packages\\": {}
+    "C:\\Users\\HIDRO\\.nuget\\packages\\": {},
+    "E:\\instal\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Z_project\\project\\project\\project.csproj",
+      "projectUniqueName": "D:\\tam\\tam.net\\Cshape_Project\\project\\project.csproj",
       "projectName": "project",
-      "projectPath": "D:\\Z_project\\project\\project\\project.csproj",
-      "packagesPath": "C:\\Users\\mis\\.nuget\\packages\\",
-      "outputPath": "D:\\Z_project\\project\\project\\obj\\",
+      "projectPath": "D:\\tam\\tam.net\\Cshape_Project\\project\\project.csproj",
+      "packagesPath": "C:\\Users\\HIDRO\\.nuget\\packages\\",
+      "outputPath": "D:\\tam\\tam.net\\Cshape_Project\\project\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "E:\\instal\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\mis\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\HIDRO\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -8008,7 +8013,6 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -8026,7 +8030,8 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      }
+      },
+      "SdkAnalysisLevel": "9.0.300"
     },
     "frameworks": {
       "net8.0": {
@@ -8100,7 +8105,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.300/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
