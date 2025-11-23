@@ -1,0 +1,48 @@
+﻿@model project.ViewModels.LoginVM
+
+@{
+    ViewData["Title"] = "DangNhap";
+}
+
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        <h1 class="mb-4">Đăng nhập</h1>
+
+        @* Hiển thị lỗi chung *@
+        <div class="text-danger">
+            @Html.ValidationMessage("loi")
+        </div>
+
+        <form asp-action="DangNhap" asp-route-returnurl="@ViewBag.ReturnUrl">
+            <input type="hidden" name="ReturnUrl" value="@ViewBag.ReturnUrl" />
+
+            <div class="row">
+                <div class="col-md-12 col-lg-6">
+                    <div class="form-item w-100">
+                        <label asp-for="UserName" class="form-label my-3"></label>
+                        <input asp-for="UserName" type="text" class="form-control" />
+                        <span asp-validation-for="UserName" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="col-md-12 col-lg-6">
+                    <div class="form-item w-100">
+                        <label asp-for="Password" class="form-label my-3"></label>
+                        <input asp-for="Password" type="password" class="form-control" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 text-center align-items-center justify-content-center pt-4">
+                <button type="submit" class="btn border-secondary py-3 px-4 text-uppercase w-100 text-primary">
+                    Đăng nhập
+                </button>
+
+                <a class="btn border-danger" asp-controller="KhachHang" asp-action="QuenMatKhau">
+                    Quên mật khẩu
+                </a>
+            </div>
+        </form>
+    </div>
+</div>

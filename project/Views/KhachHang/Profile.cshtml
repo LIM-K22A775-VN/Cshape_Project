@@ -1,0 +1,18 @@
+﻿@{
+    ViewData["Title"] = "Profile";
+
+    var name = User.Identity.Name;
+    var email = User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
+    var maKh = User.FindFirst("CustomerID")?.Value;
+}
+
+<h1>Thông tin khách hàng</h1>
+
+<div class="card" style="max-width: 5000px; padding:200px;">
+    <h3>Xin chào, @name!</h3>
+
+    <p><strong>Mã khách hàng:</strong> @maKh</p>
+    <p><strong>Email:</strong> @email</p>
+
+    <a class="btn btn-primary" asp-controller="KhachHang" asp-action="DangXuat">Đăng xuất</a>
+</div>
