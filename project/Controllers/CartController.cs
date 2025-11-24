@@ -203,6 +203,37 @@ namespace project.Controllers
             {
                 try
                 {
+                    // Kiểm tra khách hàng có tồn tại không
+                    var khachHang = db.KhachHangs.FirstOrDefault(k => k.MaKh == maKh);
+                    if (khachHang == null)
+                    {
+                        throw new Exception($"Không tìm thấy khách hàng với mã: {maKh}");
+                    }
+
+                    // Kiểm tra trạng thái có tồn tại không, nếu không có thì lấy trạng thái đầu tiên
+                    var trangThai = db.TrangThais.FirstOrDefault(t => t.MaTrangThai == 1);
+                    int maTrangThai = 1;
+                    if (trangThai == null)
+                    {
+                        // Nếu không có trạng thái 1, lấy trạng thái đầu tiên có sẵn
+                        var firstTrangThai = db.TrangThais.FirstOrDefault();
+                        if (firstTrangThai == null)
+                        {
+                            throw new Exception("Không tìm thấy trạng thái đơn hàng trong hệ thống");
+                        }
+                        maTrangThai = firstTrangThai.MaTrangThai;
+                    }
+
+                    // Kiểm tra dữ liệu bắt buộc
+                    if (string.IsNullOrWhiteSpace(model.DiaChi))
+                    {
+                        throw new Exception("Địa chỉ không được để trống");
+                    }
+                    if (string.IsNullOrWhiteSpace(model.CachThanhToan))
+                    {
+                        throw new Exception("Cách thanh toán không được để trống");
+                    }
+
                     // Tính tổng tiền
                     var tongTien = cart.Sum(p => p.ThanhTien);
                     var phiVanChuyen = 30000; // Phí vận chuyển 30.000 đ
@@ -214,14 +245,15 @@ namespace project.Controllers
                         NgayDat = DateTime.Now,
                         NgayCan = DateTime.Now,
                         NgayGiao = DateTime.Now.AddDays(3),
-                        HoTen = model.HoTen,
-                        DiaChi = model.DiaChi,
+                        HoTen = model.HoTen ?? string.Empty,
+                        DiaChi = model.DiaChi.Trim(),
                         DienThoai = model.DienThoai,
-                        CachThanhToan = model.CachThanhToan,
+                        CachThanhToan = model.CachThanhToan.Trim(),
                         CachVanChuyen = "Ship COD",
                         PhiVanChuyen = phiVanChuyen,
-                        MaTrangThai = 1, // Trạng thái: Đã đặt hàng
-                        GhiChu = !string.IsNullOrEmpty(model.Email) ? $"Email: {model.Email}" : null
+                        MaTrangThai = maTrangThai, // Trạng thái đơn hàng
+                        GhiChu = !string.IsNullOrEmpty(model.Email) ? 
+                            (model.Email.Length > 50 ? model.Email.Substring(0, 47) + "..." : model.Email) : null
                     };
 
                     db.HoaDons.Add(hoaDon);
@@ -270,8 +302,20 @@ namespace project.Controllers
                 catch (Exception ex)
                 {
                     // Rollback transaction nếu có lỗi
-                    transaction.Rollback();
-                    ModelState.AddModelError("", $"Có lỗi xảy ra khi xử lý đơn hàng: {ex.Message}");
+                    try
+                    {
+                        transaction.Rollback();
+                    }
+                    catch { }
+
+                    // Hiển thị lỗi chi tiết hơn
+                    var errorMessage = ex.Message;
+                    if (ex.InnerException != null)
+                    {
+                        errorMessage += " | Chi tiết: " + ex.InnerException.Message;
+                    }
+
+                    ModelState.AddModelError("", $"Có lỗi xảy ra khi xử lý đơn hàng: {errorMessage}");
                     ViewBag.Cart = cart;
                     ViewBag.Total = cart.Sum(p => p.ThanhTien);
                     return View(model);
