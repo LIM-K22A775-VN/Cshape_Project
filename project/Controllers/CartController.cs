@@ -198,57 +198,84 @@ namespace project.Controllers
                 return RedirectToAction("DangNhap", "KhachHang", new { ReturnUrl = "/Cart/ThanhToan" });
             }
 
-            try
+            // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
+            using (var transaction = db.Database.BeginTransaction())
             {
-                // Tạo hóa đơn
-                var hoaDon = new HoaDon
+                try
                 {
-                    MaKh = maKh,
-                    NgayDat = DateTime.Now,
-                    NgayCan = DateTime.Now,
-                    NgayGiao = DateTime.Now.AddDays(3),
-                    HoTen = model.HoTen,
-                    DiaChi = model.DiaChi,
-                    DienThoai = model.DienThoai,
-                    CachThanhToan = model.CachThanhToan,
-                    CachVanChuyen = "Ship COD",
-                    PhiVanChuyen = 0,
-                    MaTrangThai = 1,
-                    GhiChu = !string.IsNullOrEmpty(model.Email) ? $"Email: {model.Email}" : null
-                };
+                    // Tính tổng tiền
+                    var tongTien = cart.Sum(p => p.ThanhTien);
+                    var phiVanChuyen = 30000; // Phí vận chuyển 30.000 đ
 
-                db.HoaDons.Add(hoaDon);
-                db.SaveChanges();   // sinh MaHd
-
-                // Thêm chi tiết hóa đơn
-                foreach (var item in cart)
-                {
-                    var ct = new ChiTietHd
+                    // Tạo hóa đơn
+                    var hoaDon = new HoaDon
                     {
-                        MaHd = hoaDon.MaHd,
-                        MaHh = item.MaHh,
-                        SoLuong = item.SoLuong,
-                        DonGia = item.DonGia,
-                        GiamGia = 0
+                        MaKh = maKh,
+                        NgayDat = DateTime.Now,
+                        NgayCan = DateTime.Now,
+                        NgayGiao = DateTime.Now.AddDays(3),
+                        HoTen = model.HoTen,
+                        DiaChi = model.DiaChi,
+                        DienThoai = model.DienThoai,
+                        CachThanhToan = model.CachThanhToan,
+                        CachVanChuyen = "Ship COD",
+                        PhiVanChuyen = phiVanChuyen,
+                        MaTrangThai = 1, // Trạng thái: Đã đặt hàng
+                        GhiChu = !string.IsNullOrEmpty(model.Email) ? $"Email: {model.Email}" : null
                     };
-                    db.ChiTietHds.Add(ct);
+
+                    db.HoaDons.Add(hoaDon);
+                    db.SaveChanges();   // Lưu để sinh MaHd
+
+                    // Thêm chi tiết hóa đơn cho từng sản phẩm
+                    foreach (var item in cart)
+                    {
+                        // Kiểm tra hàng hóa có tồn tại không
+                        var hangHoa = db.HangHoas.FirstOrDefault(h => h.MaHh == item.MaHh);
+                        if (hangHoa == null)
+                        {
+                            throw new Exception($"Không tìm thấy hàng hóa với mã: {item.MaHh}");
+                        }
+
+                        // Kiểm tra số lượng hợp lệ
+                        if (item.SoLuong <= 0)
+                        {
+                            throw new Exception($"Số lượng sản phẩm '{item.TenHh}' không hợp lệ");
+                        }
+
+                        var ct = new ChiTietHd
+                        {
+                            MaHd = hoaDon.MaHd,
+                            MaHh = item.MaHh,
+                            SoLuong = item.SoLuong,
+                            DonGia = item.DonGia,
+                            GiamGia = 0
+                        };
+                        db.ChiTietHds.Add(ct);
+                    }
+
+                    // Lưu tất cả chi tiết hóa đơn
+                    db.SaveChanges();
+
+                    // Commit transaction - lưu tất cả vào database
+                    transaction.Commit();
+
+                    // Xóa giỏ hàng sau khi thanh toán thành công
+                    HttpContext.Session.Remove(CART_KEY);
+
+                    TempData["Message"] = $"Đặt hàng thành công! Mã hóa đơn: {hoaDon.MaHd}";
+                    TempData["Success"] = true;
+                    return RedirectToAction("Index", "Home");
                 }
-
-                db.SaveChanges();
-
-                // Xóa giỏ hàng sau khi thanh toán thành công
-                HttpContext.Session.Remove(CART_KEY);
-
-                TempData["Message"] = $"Đặt hàng thành công! Mã hóa đơn: {hoaDon.MaHd}";
-                TempData["Success"] = true;
-                return RedirectToAction("Index", "Home");
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", $"Có lỗi xảy ra khi xử lý đơn hàng: {ex.Message}");
-                ViewBag.Cart = cart;
-                ViewBag.Total = cart.Sum(p => p.ThanhTien);
-                return View(model);
+                catch (Exception ex)
+                {
+                    // Rollback transaction nếu có lỗi
+                    transaction.Rollback();
+                    ModelState.AddModelError("", $"Có lỗi xảy ra khi xử lý đơn hàng: {ex.Message}");
+                    ViewBag.Cart = cart;
+                    ViewBag.Total = cart.Sum(p => p.ThanhTien);
+                    return View(model);
+                }
             }
         }
 
