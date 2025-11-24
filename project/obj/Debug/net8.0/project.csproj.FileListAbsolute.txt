@@ -281,7 +281,6 @@ D:\tam\tam.net\Cshape_Project\project\obj\Debug\net8.0\staticwebassets.build.jso
 D:\tam\tam.net\Cshape_Project\project\obj\Debug\net8.0\staticwebassets.build.json.cache
 D:\tam\tam.net\Cshape_Project\project\obj\Debug\net8.0\staticwebassets.development.json
 D:\tam\tam.net\Cshape_Project\project\obj\Debug\net8.0\staticwebassets.build.endpoints.json
-D:\tam\tam.net\Cshape_Project\project\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 D:\tam\tam.net\Cshape_Project\project\obj\Debug\net8.0\project.csproj.Up2Date
 D:\tam\tam.net\Cshape_Project\project\obj\Debug\net8.0\project.dll
 D:\tam\tam.net\Cshape_Project\project\obj\Debug\net8.0\refint\project.dll

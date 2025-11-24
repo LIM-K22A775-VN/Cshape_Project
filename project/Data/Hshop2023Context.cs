@@ -194,6 +194,8 @@ public partial class Hshop2023Context : DbContext
                 .HasDefaultValue("Airline");
             entity.Property(e => e.DiaChi).HasMaxLength(60);
             entity.Property(e => e.GhiChu).HasMaxLength(50);
+            // DienThoai không có trong database, bỏ qua mapping
+            entity.Ignore(e => e.DienThoai);
             entity.Property(e => e.HoTen).HasMaxLength(50);
             entity.Property(e => e.MaKh)
                 .HasMaxLength(20)

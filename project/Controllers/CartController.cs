@@ -20,6 +20,26 @@ namespace project.Controllers
         {
             return View(Cart);
         }
+
+        // Hàm tạo GhiChu từ Email và DienThoai
+        private string? BuildGhiChu(string? email, string? dienThoai)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrEmpty(email))
+            {
+                parts.Add($"Email: {email}");
+            }
+            if (!string.IsNullOrEmpty(dienThoai))
+            {
+                parts.Add($"ĐT: {dienThoai}");
+            }
+            if (parts.Any())
+            {
+                var ghiChu = string.Join(", ", parts);
+                return ghiChu.Length > 50 ? ghiChu.Substring(0, 47) + "..." : ghiChu;
+            }
+            return null;
+        }
         
 
         public IActionResult AddToCart(int id,int quantity = 1)
@@ -247,13 +267,12 @@ namespace project.Controllers
                         NgayGiao = DateTime.Now.AddDays(3),
                         HoTen = model.HoTen ?? string.Empty,
                         DiaChi = model.DiaChi.Trim(),
-                        DienThoai = model.DienThoai,
+                        // DienThoai không có trong database, lưu vào GhiChu thay thế
                         CachThanhToan = model.CachThanhToan.Trim(),
                         CachVanChuyen = "Ship COD",
                         PhiVanChuyen = phiVanChuyen,
                         MaTrangThai = maTrangThai, // Trạng thái đơn hàng
-                        GhiChu = !string.IsNullOrEmpty(model.Email) ? 
-                            (model.Email.Length > 50 ? model.Email.Substring(0, 47) + "..." : model.Email) : null
+                        GhiChu = BuildGhiChu(model.Email, model.DienThoai)
                     };
 
                     db.HoaDons.Add(hoaDon);
